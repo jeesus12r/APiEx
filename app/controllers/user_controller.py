@@ -1,12 +1,18 @@
 from app.models.user_model import User
 from app import db
+from flask import jsonify, request
 
-def create_user(data):
+def create_users(data):
+    required_fields = ["nombre", "email", "password", "edad"]
+    missing_fields = [field for field in required_fields if field not in data]
+    if missing_fields:
+        return {"msg": f"Faltan campos requeridos: {', '.join(missing_fields)}"}
+
     try:
         new_user = User(
             nombre=data["nombre"],
             email=data["email"],
-            password=data["password"],  # Directamente guarda la contraseña
+            password=data["password"],
             edad=data["edad"]
         )
         db.session.add(new_user)
@@ -25,18 +31,18 @@ def get_user_by_id(user_id):
         return {"id": user.id, "nombre": user.nombre, "email": user.email, "edad": user.edad}
     return {"msg": "Usuario no encontrado"}
 
-def update_user(user_id, data):
+def update_users(user_id, data):
     user = User.query.get(user_id)
     if user:
         user.nombre = data.get("nombre", user.nombre)
         user.email = data.get("email", user.email)
-        user.password = data.get("password", user.password)  # Permite actualizar la contraseña
+        user.password = data.get("password", user.password)
         user.edad = data.get("edad", user.edad)
         db.session.commit()
         return {"msg": "Usuario actualizado exitosamente"}
     return {"msg": "Usuario no encontrado"}
 
-def delete_user(user_id):
+def delete_users(user_id):
     user = User.query.get(user_id)
     if user:
         db.session.delete(user)
@@ -44,27 +50,21 @@ def delete_user(user_id):
         return {"msg": "Usuario eliminado exitosamente"}
     return {"msg": "Usuario no encontrado"}
 
-from flask import jsonify, request
-
-def login_user():
+def login_users():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
 
-    # Validar si los campos no están vacíos
     if not email or not password:
         return jsonify({"message": "Email y contraseña son requeridos"}), 400
 
-    # Buscar el usuario por email
     user = User.query.filter_by(email=email).first()
 
-    # Depuración: verificar si se encontró el usuario
     if user:
         print(f"Usuario encontrado: {user.email}, Contraseña almacenada: {user.password}")
     else:
         print(f"Usuario con email '{email}' no encontrado.")
 
-    # Comparar contraseña (directa en este caso)
     if user and user.password == password:
         return jsonify({"message": "Inicio de sesión exitoso", "user": user.email}), 200
     elif user:
